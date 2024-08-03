@@ -46,6 +46,7 @@ var Routes = []Route{
 
 func InitRoutes() *mux.Router {
 	r := mux.NewRouter()
+	r.Use(LoggingMiddleware)
 	for _, route := range Routes {
 		r.HandleFunc(route.Path, route.Handler).Methods(route.Methods...)
 	}

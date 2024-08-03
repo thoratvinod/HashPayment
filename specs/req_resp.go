@@ -11,7 +11,10 @@ type CreatePaymentSessionRequest struct {
 	OrderName          string   `json:"orderName"`
 	OrderDescription   string   `json:"orderDescription"`
 	PaymentMethodTypes []string `json:"paymentMethodTypes"`
-	CustomerID         string   `json:"customerID"`
+	// CustomerID for stripe
+	CustomerID string `json:"customerID"`
+	// Adyen specific merchant account
+	AdyenMerchantAccount string `json:"adyenMerchantAccount"`
 }
 
 type CreatePaymentSessionResponse struct {

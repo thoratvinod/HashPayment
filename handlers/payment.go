@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -10,10 +9,6 @@ import (
 	"github.com/thoratvinod/HashPayment/database"
 	"github.com/thoratvinod/HashPayment/services"
 	"github.com/thoratvinod/HashPayment/specs"
-)
-
-const (
-	baseURL = "http://localhost:8000"
 )
 
 func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
@@ -28,21 +23,11 @@ func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
 	paymentModel.UniqueKey = uuid.New()
 	paymentModel.Status = specs.PaymentStatusCreated
 
-	successURL := fmt.Sprintf(
-		"%v/webhook/success?uniqueKey=%v&redirectURL=%v",
-		baseURL, paymentModel.UniqueKey.String(),
-		paymentRequest.SuccessWebhookURL,
-	)
-
-	// cancelURL := fmt.Sprintf(
-	// 	"%v/webhook/cacel?uniqueKey=%v&redirectURL=%v",
-	// 	baseURL, paymentModel.UniqueKey.String(),
-	// 	paymentRequest.SuccessWebhookURL,
-	// )
 
 	var returnURL string
 
 	// TODO validation
+
 	switch paymentRequest.PaymentGateaway {
 	case "stripe":
 		_, returnURL, err = services.CreateStripePaymentSession(
@@ -51,9 +36,8 @@ func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
 		)
 	case "adyen":
 		_, returnURL, err = services.CreateAdyenPaymentSession(
-			paymentRequest.Amount,
-			paymentRequest.Currency,
-			successURL,
+			paymentModel.UniqueKey.String(),
+			&paymentRequest,
 		)
 	default:
 		http.Error(w, "Invalid payment gateway provided", http.StatusBadRequest)
