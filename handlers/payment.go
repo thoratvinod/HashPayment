@@ -2,44 +2,97 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/thoratvinod/HashPayment/database"
-	"github.com/thoratvinod/HashPayment/models"
+	"github.com/thoratvinod/HashPayment/services"
+	"github.com/thoratvinod/HashPayment/specs"
 )
 
-func CreatePayment(w http.ResponseWriter, r *http.Request) {
-	var payment models.Payment
-	err := json.NewDecoder(r.Body).Decode(&payment)
+const (
+	baseURL = "http://localhost:8000"
+)
+
+func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
+	var paymentRequest specs.CreatePaymentSessionRequest
+	err := json.NewDecoder(r.Body).Decode(&paymentRequest)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	payment.UniqueKey = uuid.New()
-	payment.Status = models.PaymentStatusNone
+	paymentModel := specs.PaymentModel{}
+	paymentModel.UniqueKey = uuid.New()
+	paymentModel.Status = specs.PaymentStatusCreated
 
-	database.DB.Create(&payment)
+	successURL := fmt.Sprintf(
+		"%v/webhook/success?uniqueKey=%v&redirectURL=%v",
+		baseURL, paymentModel.UniqueKey.String(),
+		paymentRequest.SuccessWebhookURL,
+	)
 
-	// TODO payment integraiton logic here
+	// cancelURL := fmt.Sprintf(
+	// 	"%v/webhook/cacel?uniqueKey=%v&redirectURL=%v",
+	// 	baseURL, paymentModel.UniqueKey.String(),
+	// 	paymentRequest.SuccessWebhookURL,
+	// )
 
-	payment.RedirectURL = "redirect-url"
-	database.DB.Save(&payment)
+	var returnURL string
 
-	json.NewEncoder(w).Encode(payment)
+	// TODO validation
+	switch paymentRequest.PaymentGateaway {
+	case "stripe":
+		_, returnURL, err = services.CreateStripePaymentSession(
+			paymentModel.UniqueKey.String(),
+			&paymentRequest,
+		)
+	case "adyen":
+		_, returnURL, err = services.CreateAdyenPaymentSession(
+			paymentRequest.Amount,
+			paymentRequest.Currency,
+			successURL,
+		)
+	default:
+		http.Error(w, "Invalid payment gateway provided", http.StatusBadRequest)
+		return
+	}
+
+	var resp specs.CreatePaymentSessionResponse
+
+	if err != nil {
+		paymentModel.ErrorMsg = err.Error()
+		resp = specs.CreatePaymentSessionResponse{
+			UniqueKey: paymentModel.UniqueKey.String(),
+			Error:     err.Error(),
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		resp = specs.CreatePaymentSessionResponse{
+			UniqueKey:   paymentModel.UniqueKey.String(),
+			RedirectURL: returnURL,
+		}
+	}
+	database.DB.Create(&paymentModel)
+	json.NewEncoder(w).Encode(resp)
 }
 
 func CheckPaymentStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uniqueKey := vars["uniqueKey"]
 
-	var payment models.Payment
+	// TODO validation
+
+	var payment specs.PaymentModel
 	if err := database.DB.Where("unique_key = ?", uniqueKey).First(&payment).Error; err != nil {
-		http.Error(w, "Payment not found", http.StatusNotFound)
+		http.Error(w, "Payment record not found", http.StatusBadRequest)
 		return
 	}
+	resp := specs.CheckPaymentStatusResponse{
+		PaymentStatus: payment.Status,
+	}
 
-	json.NewEncoder(w).Encode(payment)
+	json.NewEncoder(w).Encode(resp)
 }

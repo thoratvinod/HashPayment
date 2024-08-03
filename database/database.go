@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/thoratvinod/HashPayment/models"
+	"github.com/thoratvinod/HashPayment/specs"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -34,14 +34,14 @@ func InitDatabase() error {
 }
 
 func migrate() error {
-	err := DB.AutoMigrate(models.Payment{})
+	err := DB.AutoMigrate(specs.PaymentModel{})
 	if err != nil {
 		return fmt.Errorf("database migration failed, err=%+v", err.Error())
 	}
 	return nil
 }
 
-func Close() {
+func CloseDB() {
 	sqlDB, err := DB.DB()
 	if err != nil {
 		log.Fatal("Failed to get SQL DB object:", err)
