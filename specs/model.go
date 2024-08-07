@@ -7,13 +7,6 @@ import (
 
 type PaymentStatus uint32
 
-const (
-	PaymentStatusCreated PaymentStatus = iota
-	PaymentStatusSuccess
-	PaymentStatusCanceled
-	PaymentStatusFailed
-)
-
 type PaymentModel struct {
 	gorm.Model
 	UniqueKey   uuid.UUID     `gorm:"type:uuid;not null"`

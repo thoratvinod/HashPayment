@@ -5,7 +5,6 @@ type CreatePaymentSessionRequest struct {
 	PaymentGateaway    string   `json:"paymentGateway"`
 	Amount             int64    `json:"amount"`
 	Currency           string   `json:"currency"`
-	Keys               []byte   `json:"keys"`
 	SuccessWebhookURL  string   `json:"successWebhookURL"`
 	FailureWebhookURL  string   `json:"failureWebhookURL"`
 	OrderName          string   `json:"orderName"`
@@ -24,5 +23,9 @@ type CreatePaymentSessionResponse struct {
 }
 
 type CheckPaymentStatusResponse struct {
-	PaymentStatus PaymentStatus `json:"paymentStatus"`
+	PaymentStatus string `json:"paymentStatus"`
+}
+
+type SetAPIKeysRequest struct {
+	APIKeys map[string]string `json:"apiKeys"`
 }

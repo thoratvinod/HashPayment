@@ -19,10 +19,15 @@ func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, err = services.GetAPIKeyManager().Get(paymentRequest.PaymentGateaway)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	paymentModel := specs.PaymentModel{}
 	paymentModel.UniqueKey = uuid.New()
 	paymentModel.Status = specs.PaymentStatusCreated
-
 
 	var returnURL string
 
@@ -48,12 +53,14 @@ func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		paymentModel.ErrorMsg = err.Error()
+		paymentModel.Status = specs.PaymentStatusFailed
 		resp = specs.CreatePaymentSessionResponse{
 			UniqueKey: paymentModel.UniqueKey.String(),
 			Error:     err.Error(),
 		}
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
+		paymentModel.Status = specs.PaymentStatusPending
 		resp = specs.CreatePaymentSessionResponse{
 			UniqueKey:   paymentModel.UniqueKey.String(),
 			RedirectURL: returnURL,
@@ -74,8 +81,10 @@ func CheckPaymentStatus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Payment record not found", http.StatusBadRequest)
 		return
 	}
+
+	statusMsg := specs.PaymentStatusToMessageMapping[payment.Status]
 	resp := specs.CheckPaymentStatusResponse{
-		PaymentStatus: payment.Status,
+		PaymentStatus: statusMsg,
 	}
 
 	json.NewEncoder(w).Encode(resp)

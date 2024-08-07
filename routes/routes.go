@@ -33,14 +33,14 @@ var Routes = []Route{
 		Handler: handlers.CheckPaymentStatus,
 	},
 	{
-		Path:    "/webhook/success",
+		Path:    "/webhook", // this webhook is common
 		Methods: []string{http.MethodGet},
-		Handler: handlers.SuccessWebhook,
+		Handler: handlers.WebhookHandler,
 	},
 	{
-		Path:    "/webhook/cancel",
-		Methods: []string{http.MethodGet},
-		Handler: handlers.CanceledWebhook,
+		Path:    "/setapikeys",
+		Methods: []string{http.MethodPost},
+		Handler: handlers.SetAPIKeysHandler,
 	},
 }
 
