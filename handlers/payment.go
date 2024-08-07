@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -25,9 +26,23 @@ func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	paymentModel := specs.PaymentModel{}
-	paymentModel.UniqueKey = uuid.New()
-	paymentModel.Status = specs.PaymentStatusCreated
+	paymentModel := specs.PaymentModel{
+		PaymentGateaway:  paymentRequest.PaymentGateaway,
+		UniqueKey:        uuid.New(),
+		OrderName:        paymentRequest.OrderName,
+		OrderDescription: paymentRequest.OrderDescription,
+		Amount:           paymentRequest.Amount,
+		Currency:         paymentRequest.Currency,
+	}
+
+	if len(paymentRequest.Metadata) != 0 {
+		metadataJson, err := json.Marshal(paymentRequest.Metadata)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error while marshaling metadata: %+v", err), http.StatusBadRequest)
+			return
+		}
+		paymentModel.Metadata = string(metadataJson)
+	}
 
 	var returnURL string
 
@@ -66,7 +81,52 @@ func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
 			RedirectURL: returnURL,
 		}
 	}
-	database.DB.Create(&paymentModel)
+	reqJson, err := json.Marshal(paymentRequest)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error while marshaling request: %+v", err), http.StatusBadRequest)
+		return
+	}
+	paymentModel.RawRequest = string(reqJson)
+	result := database.DB.Create(&paymentModel)
+	if result.Error != nil {
+		resp = specs.CreatePaymentSessionResponse{
+			Error: fmt.Sprintf("error creating payment in DB: %+v", result.Error),
+		}
+	}
+	json.NewEncoder(w).Encode(resp)
+}
+
+func GetPaymentDetails(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	uniqueKey := vars["uniqueKey"]
+
+	// TODO validation
+
+	var payment specs.PaymentModel
+	if err := database.DB.Where("unique_key = ?", uniqueKey).First(&payment).Error; err != nil {
+		http.Error(w, "Payment record not found", http.StatusBadRequest)
+		return
+	}
+	metadata := make(map[string]string)
+	if payment.Metadata != "" {
+		err := json.Unmarshal([]byte(payment.Metadata), &metadata)
+		if err != nil {
+			metadata["error-in-unmarshal"] = err.Error()
+			metadata["rawMetadata"] = payment.Metadata
+		}
+	}
+	resp := specs.GetPaymentDetailsResponse{
+		PaymentGateaway:  payment.PaymentGateaway,
+		UniqueKey:        uniqueKey,
+		OrderName:        payment.OrderName,
+		OrderDescription: payment.OrderDescription,
+		Amount:           payment.Amount,
+		Currency:         payment.Currency,
+		Status:           payment.Status,
+		ErrorMsg:         payment.ErrorMsg,
+		Metadata:         metadata,
+	}
+
 	json.NewEncoder(w).Encode(resp)
 }
 

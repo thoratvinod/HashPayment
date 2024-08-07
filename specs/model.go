@@ -5,15 +5,16 @@ import (
 	"gorm.io/gorm"
 )
 
-type PaymentStatus uint32
-
 type PaymentModel struct {
 	gorm.Model
-	UniqueKey   uuid.UUID     `gorm:"type:uuid;not null"`
-	Amount      int64         `gorm:"type:decimal;not null"`
-	TenantInfo  string        `gorm:"type:text;not null"`
-	WebhookURL  string        `gorm:"type:text;not null"`
-	Status      PaymentStatus `gorm:"type:integer;not null;default:0"`
-	RedirectURL string        `gorm:"type:text"`
-	ErrorMsg    string        `gorm:"type:text"`
+	PaymentGateaway  string        `gorm:"type:text;not null"`
+	UniqueKey        uuid.UUID     `gorm:"type:uuid;not null"`
+	OrderName        string        `gorm:"type:text"`
+	OrderDescription string        `gorm:"type:text"`
+	Amount           int64         `gorm:"type:decimal;not null"`
+	Currency         string        `gorm:"type:text;not null"`
+	Status           PaymentStatus `gorm:"type:integer;not null;default:0"`
+	ErrorMsg         string        `gorm:"type:text"`
+	Metadata         string        `gorm:"type:json"`
+	RawRequest       string        `gorm:"type:json;not null"`
 }

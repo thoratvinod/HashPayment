@@ -14,10 +14,12 @@ type CreatePaymentSessionRequest struct {
 	CustomerID string `json:"customerID"`
 	// Adyen specific merchant account
 	AdyenMerchantAccount string `json:"adyenMerchantAccount"`
+	// Custom data
+	Metadata map[string]string `json:"metadata"`
 }
 
 type CreatePaymentSessionResponse struct {
-	UniqueKey   string `json:"uniqueKey"`
+	UniqueKey   string `json:"uniqueKey,omitempty"`
 	RedirectURL string `json:"redirectURL,omitempty"`
 	Error       string `json:"error,omitempty"`
 }
@@ -28,4 +30,16 @@ type CheckPaymentStatusResponse struct {
 
 type SetAPIKeysRequest struct {
 	APIKeys map[string]string `json:"apiKeys"`
+}
+
+type GetPaymentDetailsResponse struct {
+	PaymentGateaway  string            `json:"paymentGateaway"`
+	UniqueKey        string            `json:"uniqueKey"`
+	OrderName        string            `json:"orderName"`
+	OrderDescription string            `json:"orderDescription"`
+	Amount           int64             `json:"amount"`
+	Currency         string            `json:"currency"`
+	Status           PaymentStatus     `json:"status"`
+	ErrorMsg         string            `json:"errorMsg"`
+	Metadata         map[string]string `json:"metadata"`
 }

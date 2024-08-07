@@ -1,8 +1,9 @@
 package specs
 
+type PaymentStatus uint32
+
 const (
-	PaymentStatusCreated PaymentStatus = iota
-	PaymentStatusPending
+	PaymentStatusPending PaymentStatus = iota
 	PaymentStatusCanceled
 	PaymentStatusFailed
 	PaymentStatusCompleted

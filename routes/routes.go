@@ -28,6 +28,11 @@ var Routes = []Route{
 		Handler: handlers.CreatePaymentSession,
 	},
 	{
+		Path:    "/payment/{uniqueKey}",
+		Methods: []string{http.MethodGet},
+		Handler: handlers.GetPaymentDetails,
+	},
+	{
 		Path:    "/payment/status/{uniqueKey}",
 		Methods: []string{http.MethodGet},
 		Handler: handlers.CheckPaymentStatus,
