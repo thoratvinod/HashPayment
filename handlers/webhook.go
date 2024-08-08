@@ -17,27 +17,22 @@ import (
 
 func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	paymentGateway := r.URL.Query().Get("paymentGateway")
-	// if paymentGateway == "" {
-
-	// }
-
 	switch paymentGateway {
 	case "stripe":
 		handleStripeWebhook(w, r)
 	case "adyen":
 		handleAdyenWebhook(w, r)
 	default:
+		http.Error(w, fmt.Sprintf("invalid payment gateway received: %s", paymentGateway), http.StatusBadRequest)
+		return
 	}
-
 }
 
 func handleStripeWebhook(w http.ResponseWriter, r *http.Request) {
-
 	queryParams := r.URL.Query()
 	uniqueKey := queryParams.Get("uniqueKey")
 	redirectURL := queryParams.Get("redirectURL")
 	paymentStatus := queryParams.Get("paymentStatus")
-
 	var paymentStatusEnum specs.PaymentStatus
 	switch paymentStatus {
 	case "success":
@@ -45,9 +40,14 @@ func handleStripeWebhook(w http.ResponseWriter, r *http.Request) {
 	case "cancel":
 		paymentStatusEnum = specs.PaymentStatusCanceled
 	default:
-		// handle
+		http.Error(w, fmt.Sprintf("invalid payment status received: %s", paymentStatus), http.StatusBadRequest)
+		return
 	}
-	updatePaymentStatus(uniqueKey, paymentStatusEnum)
+	err := updatePaymentStatus(uniqueKey, paymentStatusEnum)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error while updating status: %+v", err.Error()), http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
@@ -70,14 +70,13 @@ func handleAdyenWebhook(w http.ResponseWriter, r *http.Request) {
 		ApiKey:      string(plainAPIKey),
 		Environment: common.TestEnv,
 	})
-
 	service := client.Checkout()
-
 	getResultPaymentSession := service.PaymentsApi.GetResultOfPaymentSessionInput(sessionId)
 	getResultPaymentSession = getResultPaymentSession.SessionResult(sessionResult)
 	res, _, err := client.Checkout().PaymentsApi.GetResultOfPaymentSession(context.Background(), getResultPaymentSession)
 	if err != nil {
-		//handle
+		http.Error(w, fmt.Sprintf("error while getting payment session results: %+v", err), http.StatusInternalServerError)
+		return
 	}
 	var statusToUpdate specs.PaymentStatus
 	var redirectURL string
@@ -95,7 +94,11 @@ func handleAdyenWebhook(w http.ResponseWriter, r *http.Request) {
 		redirectURL = failureWebhookURL
 		statusToUpdate = specs.PaymentStatusFailed
 	}
-	updatePaymentStatus(uniqueKey, statusToUpdate)
+	err = updatePaymentStatus(uniqueKey, statusToUpdate)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error while updating status on DB: %+v", err), http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 

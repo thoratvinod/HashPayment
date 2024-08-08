@@ -19,13 +19,11 @@ func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	_, err = services.GetAPIKeyManager().Get(paymentRequest.PaymentGateaway)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	paymentModel := specs.PaymentModel{
 		PaymentGateaway:  paymentRequest.PaymentGateaway,
 		UniqueKey:        uuid.New(),
@@ -34,7 +32,6 @@ func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
 		Amount:           paymentRequest.Amount,
 		Currency:         paymentRequest.Currency,
 	}
-
 	if len(paymentRequest.Metadata) != 0 {
 		metadataJson, err := json.Marshal(paymentRequest.Metadata)
 		if err != nil {
@@ -45,9 +42,6 @@ func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var returnURL string
-
-	// TODO validation
-
 	switch paymentRequest.PaymentGateaway {
 	case "stripe":
 		_, returnURL, err = services.CreateStripePaymentSession(
@@ -99,9 +93,10 @@ func CreatePaymentSession(w http.ResponseWriter, r *http.Request) {
 func GetPaymentDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uniqueKey := vars["uniqueKey"]
-
-	// TODO validation
-
+	if uniqueKey == "" {
+		http.Error(w, "empty uniqueKey received", http.StatusBadRequest)
+		return
+	}
 	var payment specs.PaymentModel
 	if err := database.DB.Where("unique_key = ?", uniqueKey).First(&payment).Error; err != nil {
 		http.Error(w, "Payment record not found", http.StatusBadRequest)
@@ -126,7 +121,6 @@ func GetPaymentDetails(w http.ResponseWriter, r *http.Request) {
 		ErrorMsg:         payment.ErrorMsg,
 		Metadata:         metadata,
 	}
-
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -134,7 +128,10 @@ func CheckPaymentStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uniqueKey := vars["uniqueKey"]
 
-	// TODO validation
+	if uniqueKey == "" {
+		http.Error(w, "empty uniqueKey received", http.StatusBadRequest)
+		return
+	}
 
 	var payment specs.PaymentModel
 	if err := database.DB.Where("unique_key = ?", uniqueKey).First(&payment).Error; err != nil {

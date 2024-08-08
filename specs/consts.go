@@ -6,3 +6,6 @@ var PaymentStatusToMessageMapping = map[PaymentStatus]string{
 	PaymentStatusFailed:    "failed",
 	PaymentStatusCompleted: "completed",
 }
+
+// ServerBaseURL will get set in main when spawning URL
+var ServerBaseURL string

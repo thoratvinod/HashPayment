@@ -16,7 +16,7 @@ type Route struct {
 var Routes = []Route{
 	{
 		Path:    "/ping",
-		Methods: []string{http.MethodPost, http.MethodPost},
+		Methods: []string{http.MethodGet, http.MethodPost},
 		Handler: func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("pong!"))

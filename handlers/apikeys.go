@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/thoratvinod/HashPayment/services"
@@ -19,7 +20,11 @@ func SetAPIKeysHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Gateway name cannot be empty", http.StatusBadRequest)
 			return
 		}
-		services.GetAPIKeyManager().Set(gateway, apiKey)
+		err := services.GetAPIKeyManager().Set(gateway, apiKey)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("decoding of API key failed for %v: %+v", gateway, err), http.StatusBadRequest)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)

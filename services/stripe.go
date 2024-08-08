@@ -9,21 +9,16 @@ import (
 	// "github.com/thoratvinod/HashPayment/specs"
 )
 
-const (
-	baseURL = "http://localhost:8000"
-)
-
 func CreateStripePaymentSession(uniqueKey string, req *specs.CreatePaymentSessionRequest) (string, string, error) {
 
 	successURL := fmt.Sprintf(
 		"%v/webhook?uniqueKey=%v&redirectURL=%v&paymentStatus=success&paymentGateway=stripe",
-		baseURL, uniqueKey,
+		specs.ServerBaseURL, uniqueKey,
 		req.SuccessWebhookURL,
 	)
-
 	cancelURL := fmt.Sprintf(
 		"%v/webhook?uniqueKey=%v&redirectURL=%v&paymentStatus=cancel&paymentGateway=stripe",
-		baseURL, uniqueKey,
+		specs.ServerBaseURL, uniqueKey,
 		req.FailureWebhookURL,
 	)
 
@@ -34,7 +29,6 @@ func CreateStripePaymentSession(uniqueKey string, req *specs.CreatePaymentSessio
 	stripe.Key = plainAPIKey
 
 	params := &stripe.CheckoutSessionParams{
-		PaymentMethodTypes: stripe.StringSlice(req.PaymentMethodTypes),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
@@ -52,6 +46,9 @@ func CreateStripePaymentSession(uniqueKey string, req *specs.CreatePaymentSessio
 		SuccessURL: stripe.String(successURL),
 		CancelURL:  stripe.String(cancelURL),
 		Customer:   stripe.String(req.CustomerID),
+	}
+	if len(req.PaymentMethodTypes) != 0 {
+		params.PaymentMethodTypes = stripe.StringSlice(req.PaymentMethodTypes)
 	}
 	session, err := session.New(params)
 	if err != nil {

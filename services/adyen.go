@@ -13,7 +13,7 @@ import (
 func CreateAdyenPaymentSession(uniqueKey string, req *specs.CreatePaymentSessionRequest) (string, string, error) {
 	returnURL := fmt.Sprintf(
 		"%v/webhook?uniqueKey=%v&paymentGateway=adyen&successWebhookURL=%v&failureWebhookURL=%v",
-		baseURL, uniqueKey,
+		specs.ServerBaseURL, uniqueKey,
 		req.SuccessWebhookURL,
 		req.FailureWebhookURL,
 	)
@@ -31,9 +31,8 @@ func CreateAdyenPaymentSession(uniqueKey string, req *specs.CreatePaymentSession
 	service := client.Checkout()
 
 	body := checkout.CreateCheckoutSessionRequest{
-		AllowedPaymentMethods: req.PaymentMethodTypes,
-		Reference:             req.OrderName,
-		Mode:                  common.PtrString("hosted"),
+		Reference: req.OrderName,
+		Mode:      common.PtrString("hosted"),
 		Amount: checkout.Amount{
 			Value:    req.Amount,
 			Currency: req.Currency,
@@ -44,6 +43,10 @@ func CreateAdyenPaymentSession(uniqueKey string, req *specs.CreatePaymentSession
 			{Quantity: common.PtrInt64(1), AmountIncludingTax: common.PtrInt64(req.Amount), Description: common.PtrString(req.OrderDescription)},
 		},
 		MerchantAccount: req.AdyenMerchantAccount,
+	}
+
+	if len(req.PaymentMethodTypes) == 0 {
+		body.AllowedPaymentMethods = req.PaymentMethodTypes
 	}
 
 	sessionReq := service.PaymentsApi.SessionsInput().CreateCheckoutSessionRequest(body)

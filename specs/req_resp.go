@@ -40,6 +40,6 @@ type GetPaymentDetailsResponse struct {
 	Amount           int64             `json:"amount"`
 	Currency         string            `json:"currency"`
 	Status           PaymentStatus     `json:"status"`
-	ErrorMsg         string            `json:"errorMsg"`
+	ErrorMsg         string            `json:"errorMsg,omitempty"`
 	Metadata         map[string]string `json:"metadata"`
 }

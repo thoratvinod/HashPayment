@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/thoratvinod/HashPayment/specs"
 	"gorm.io/driver/postgres"
@@ -13,12 +14,12 @@ var DB *gorm.DB
 var err error
 
 func InitDatabase() error {
-	host := "localhost"
-	port := 5432
-	dbName := "HashPayment"
-	dbUser := "postgres"
-	password := ""
-	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+	dbUser := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
 		host, port, dbUser, dbName, password)
 
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
